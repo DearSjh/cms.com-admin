@@ -25,7 +25,7 @@
             <el-table-column  fixed="right" label="操作" width="150">
               <template slot-scope="scope">
                 <el-button type="primary" plain size="small" @click="handleEdit(scope.$index,scope.row)">修改</el-button>
-                <el-button size="small" @click="handleDelete(scope.$index,scope.row)">删除</el-button>
+                <el-button size="small" @click="handleDelete(scope.$index,scope.row)" type="danger">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -33,7 +33,14 @@
         <br>
         <br>
         <!-- 分页 -->
-        <el-pagination @current-change="getResult"  :current-page="currentPage" :page-size="pageSize" layout="total, prev, pager, next" :total="count" >
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[10, 50, 100, 200]"
+          :page-size="perPage"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total">
         </el-pagination>
       </div>
     </div>
@@ -68,17 +75,29 @@
           </dl>
           <dl class="rows">
             <dt style="text-align: left;width: 150px;">
-              <label><em></em>图片</label>
+              <label><em>*</em>开启状态</label>
             </dt>
             <dd class="opt">
+              <el-radio label="1" v-model="addForm.state">开启</el-radio>
+              <el-radio label="0" v-model="addForm.state">关闭</el-radio>
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt style="text-align: left;width: 150px;">
+              <label><em></em>图片</label>
+            </dt>
+            <dd style="width: 355px;">
               <!--element 图片上传-->
               <el-upload
-                action="/admin/uploadImage"
-                list-type="picture-card"
+                action="//cms.com/admin/uploadImage"
+                list-type="picture"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
                 :on-success="success">
-                <i class="el-icon-plus"></i>
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" name="address" type="text" style="width: 300px;">
+                  <el-button size="small" type="primary">点击上传</el-button>
+                </div>
               </el-upload>
               <el-dialog :visible.sync="dialogImg">
                 <img width="100%" :src="dialogImageUrl" alt="">
@@ -122,20 +141,38 @@
               <input type="text" value="" v-model="editForm.custom_link" class="custom_link el-input__inner">
             </dd>
           </dl>
+
+          <dl class="rows">
+            <dt style="text-align: left;width: 150px;">
+              <label><em>*</em>开启状态</label>
+            </dt>
+            <dd class="opt">
+              <el-radio label="1" v-model="editForm.state">开启</el-radio>
+              <el-radio label="0" v-model="editForm.state">关闭</el-radio>
+            </dd>
+          </dl>
+
           <dl class="rows">
             <dt style="text-align: left;width: 150px;">
               <label><em></em>图片</label>
             </dt>
-            <dd class="opt">
+            <dd style="width: 355px;">
               <!--element 图片上传-->
               <el-upload
-                action="/admin/uploadImage"
-                list-type="picture-card"
+                action="//cms.com/admin/uploadImage"
+                list-type="picture"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
                 :on-success="success">
-                <i class="el-icon-plus"></i>
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" name="address" type="text" style="width: 300px;">
+                  <el-button size="small" type="primary" @click="img_show">点击上传</el-button>
+                </div>
               </el-upload>
+              <div class="imgshow" v-if="editForm.img">
+                <img :src="editForm.img" alt="" style="width: 70px;height: 70px;line-height: 70px;margin: auto 0px">
+                <div style="margin: auto 0px" v-if="editForm.img">{{editForm.img_name}}</div>
+              </div>
               <el-dialog :visible.sync="dialogImg">
                 <img width="100%" :src="dialogImageUrl" alt="">
               </el-dialog>
@@ -159,6 +196,7 @@
     name: 'webInfo',
     data() {
       return {
+
         // 提交栏目
         visible: false,
         dialogVisible: false,
@@ -175,9 +213,9 @@
         //批量选中data
         selectList: [],
         //分页
-        count: 0,
+        perPage: 10,
         currentPage: 1,
-        pageSize: 10,
+        total: 0,
 
         //新增界面是否显示
         addFormVisible: false,
@@ -187,7 +225,8 @@
         addForm: {
           custom_name: '',
           custom_link: '',
-          custom_content: ''
+          custom_content: '',
+          state:'1',
         },
 
         //编辑界面是否显示
@@ -198,17 +237,28 @@
         editForm: {
           custom_name: '',
           custom_link: '',
-          custom_content: ''
+          custom_content: '',
+          state:'',
+
+          //展示图片
+          img:'',
+          img_name:'',
         },
       };
     },
     methods: {
-      //图片上传
-      handleRemove(file, fileList) {
-        console.log(file, fileList);
+      //分页
+      handleCurrentChange(val) {
+        this.currentPage = val
+        this.getResult()
       },
+      handleSizeChange(val) {
+        this.perPage = val
+        this.getResult()
+      },
+      //图片上传
+      handleRemove(file, fileList) {},
       handlePictureCardPreview(file) {
-        console.log(file)
         this.dialogImageUrl = file.url;
         this.dialogImg = true;
       },
@@ -217,13 +267,16 @@
       },
 
       getResult: function() {
-        apis.cmsApi.customList()
+        var perPage = this.perPage,
+          page = this.currentPage;
+        apis.cmsApi.customList(perPage,page)
           .then(data => {
-            console.log(data.data.code)
             if (data.data.code !== 200){
               alert(data.data.message)
             }else {
-              this.tableData = data.data.data.data
+              this.tableData = data.data.data.data;
+              this.total = data.data.data.pagination.total;
+              $('.el-upload-list__item').hide()
             }
           })
           .catch(err => {
@@ -239,14 +292,16 @@
       addSubmit: function() {
         var param = {
           picture: this.custom_img,
-          name: this.custom_name,
-          link: this.custom_link,
-          content: this.custom_content
+          name: this.addForm.custom_name,
+          link: this.addForm.custom_link,
+          state:this.addForm.state,
+          content: this.addForm.custom_content
         }
         apis.cmsApi.customAdd(param).then(data => {
           if (data.data.code == 200){
             swal(data.data.message+"!", "", "success").then((value) => {
               this.getResult()
+              this.addFormVisible = false;
             });
           }else {
             swal(data.data.message+"!", "", "");
@@ -257,6 +312,9 @@
           });
       },
       //显示编辑界面
+      img_show:function(){
+        this.editForm.img = ''
+      },
       handleEdit: function(index, row) {
         this.editFormVisible = true;
         apis.cmsApi.customDetails(row.id).then(data => {
@@ -264,7 +322,13 @@
               this.editForm.custom_name = data.data.data.name
               this.editForm.custom_link = data.data.data.link
               this.editForm.custom_content = data.data.data.content
-              window.banner_modify_submit_id = data.data.data.id
+              this.editForm.state = data.data.data.state.toString();
+              window.custom_modify_submit_id = data.data.data.id
+              //图片展示
+              this.editForm.img = '//cms.com'+data.data.data.picture;
+              //用正则获取img图片路径中的名称
+              this.editForm.img_name = data.data.data.picture.match(/\/(\w+\.(?:png|jpg|gif|bmp))$/i)[1];
+
           }else {
             swal(data.data.message+"!", "", "");
           }
@@ -273,12 +337,13 @@
       //编辑
       editSubmit: function() {
         var param = {
-          name: this.custom_name,
+          name: this.editForm.custom_name,
           picture: this.custom_img,
-          link: this.custom_link,
-          content: this.custom_content
+          link: this.editForm.custom_link,
+          state: this.editForm.state,
+          content: this.editForm.custom_content
         }
-        apis.cmsApi.customEdit(banner_modify_submit_id,param).then(data => {
+        apis.cmsApi.customEdit(custom_modify_submit_id,param).then(data => {
           if (data.data.code == 200){
             this.editFormVisible = false;
             swal(data.data.message+"!", "", "success").then((value) => {
@@ -300,7 +365,6 @@
       handleDelete:function(index, row){
         var idArray = new Array()
         idArray.push(row.id)
-        alert(idArray)
         this.$confirm("确认删除该记录吗?", "提示", {
           type: "warning"
         })
@@ -342,7 +406,7 @@
           .then(() => {
             this.listLoading = true;
             this.$ajax({
-              method: "GET",
+              method: "post",
               url: "//cms.com/admin/banner/del",
               data: {
                 ids:idArray
@@ -383,6 +447,15 @@
     margin: 10px 0px;
   }
 
+  .imgshow{
+    width: 260px;height: 90px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-around;
+    border: 1px solid #c0ccda;
+    border-radius: 6px;
+  }
+
   .rows-text {
     text-align: left;
     width: 100px;
@@ -390,7 +463,7 @@
   }
 
   .opt {
-    width: 260px;
+    width: 350px;
   }
 
   .tit {

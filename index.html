@@ -4,10 +4,11 @@
     <meta charset="utf-8">
     <!-- <meta name="viewport" content="width=device-width,initial-scale=1.0"> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>merciqiao-vue</title>
+    <title>后台管理系统</title>
   </head>
   <body>
     <div id="app"></div>
+    <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script src="https://cdn.bootcss.com/vue-router/3.0.1/vue-router.min.js"></script>
     <script src="https://cdn.bootcss.com/axios/0.18.0/axios.min.js"></script>
@@ -23,6 +24,33 @@
     <link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-chalk/index.css">
     <!-- 引入组件库 -->
     <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+
+    <style>
+      .demo .el-switch__label {
+        position: absolute;
+        display: none;
+        color: #fff;
+      }
+      /*打开时文字位置设置*/
+      .demo .el-switch__label--right {
+        z-index: 1;
+        right: -10px;
+      }
+      /*关闭时文字位置设置*/
+      .demo .el-switch__label--left {
+        z-index: 1;
+        left: 23px;
+      }
+      /*显示文字*/
+      .demo .el-switch__label.is-active {
+        display: block;
+        color: #fff;
+      }
+      .demo.el-switch .el-switch__core,
+      .el-switch .el-switch__label {
+        width: 50px !important;
+      }
+    </style>
 
     <!-- built files will be auto injected -->
     <script type="text/javascript">

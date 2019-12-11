@@ -25,7 +25,7 @@
                     <!--<span class="btn-bell-badge" v-if="message"></span>-->
                 <!--</div>-->
                 <!-- 用户头像 -->
-                <div class="user-avator"><img src="static/img/0.jpg"></div>
+                <div class="user-avator"><img :src="languageImg"></div>
                 <!-- 用户名下拉菜单 -->
                 <el-dropdown class="user-name" trigger="click" @command="handleCommand">
                     <span class="el-dropdown-link">
@@ -33,8 +33,14 @@
                     </span>
 
                     <el-dropdown-menu slot="dropdown">
-                        <el-dropdown-item divided  command="changeZh">切换中文</el-dropdown-item>
-                        <el-dropdown-item command="changeEn">切换英文</el-dropdown-item>
+                        <el-dropdown-item v-for="language in languageBarData" :key="language.value" divided>
+                          <div style="display: flex" @click="languageCookie(language)">
+                            <div>
+                              <img :src="'//cms.com'+language.pic" alt="" style="width: 40px;padding-right: 10px">
+                            </div>
+                            <div>{{language.name}}</div>
+                          </div>
+                        </el-dropdown-item>
                         <el-dropdown-item divided  command="loginout">退出登录</el-dropdown-item>
                     </el-dropdown-menu>
                 </el-dropdown>
@@ -51,14 +57,23 @@
                 fullscreen: false,
                 name: 'admin',
                 lev:'王者级',
-                message: 2
+                message: 2,
+
+                languageBarData:[],
+
+                img:'static/img/0.jpg',
             }
         },
         computed:{
             username(){
-                let username = this.$common.getSessionStorage('username');
+                let username = this.$common.getSessionStorage('langname');
                 return username ? username : this.name;
             },
+            languageImg(){
+              let languageImg = this.$common.getSessionStorage('languageImg');
+              return languageImg ? languageImg : this.img;
+            },
+
             getlev(){
 
                 let levList = this.$common.getSessionStorage('lev',true);
@@ -84,12 +99,6 @@
                   }).catch(() => {
 
                   });
-                }
-                else if(command == 'changeZh'){
-                    this.$i18n.locale = 'zh_CN';
-                }
-                else if(command == 'changeEn'){
-                    this.$i18n.locale = 'en_US';
                 }
             },
             // 侧边栏折叠
@@ -123,12 +132,45 @@
                     }
                 }
                 this.fullscreen = !this.fullscreen;
-            }
+            },
+
+            //语言栏
+            languageBar () {
+              this.$ajax({
+                method: "post",
+                url: "//cms.com/admin/webInfo/languageValue",
+                data: {}
+              }).then(res => {
+                this.languageBarData = res.data.data.data
+              });
+            },
+            //语言保存cookie
+            languageCookie(item){
+              console.log(item)
+              if (item !== undefined){
+                this.$common.setSessionStorage('langname',item.name)
+                this.$common.setSessionStorage('lang',item.value)
+                this.$common.setSessionStorage('languageImg','//cms.com'+item.pic)
+                document.cookie="lang="+item.value;
+                window.location.reload()
+              } else {
+                this.$common.setSessionStorage('langname','中文（简体）')
+                this.$common.setSessionStorage('lang',1)
+                this.$common.setSessionStorage('languageImg','//cms.com/assets/img/lang/china.gif')
+                document.cookie="lang=1;path=/";
+              }
+            },
+        },
+        created() {
+          window.languageBar = this.languageBar
         },
         mounted(){
             if(document.body.clientWidth < 1366){
                 this.collapseChage();
             }
+
+            this.languageBar ()
+            this.languageCookie()
         }
     }
 </script>

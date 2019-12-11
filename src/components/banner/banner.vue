@@ -10,23 +10,43 @@
       <!-- 页面内容区begin -->
       <div class="container">
         <!--新增按钮-->
-        <el-button type="success" icon="el-icon-circle-plus-outline" @click="handleAdd" size="mini" round>新增</el-button>
-        <el-button type="danger" icon="el-icon-delete" @click="handleDeleteList" size="mini" round>删除</el-button>
+        <el-button @click="handleAdd" icon="el-icon-circle-plus-outline" round size="mini" type="success">新增</el-button>
+        <el-button @click="handleDeleteList" icon="el-icon-delete" round size="mini" type="danger">删除</el-button>
         <template>
           <!--表格数据及操作-->
-          <el-table :data="tableData" size="mini"  highlight-current-row border   class="el-tb-edit mgt20" ref="multipleTable" tooltip-effect="dark" v-loading="listLoading" @selection-change="selectChange">
+          <el-table :data="tableData" @selection-change="selectChange" border class="el-tb-edit mgt20" highlight-current-row
+                    ref="multipleTable" size="mini" tooltip-effect="dark" v-loading="listLoading">
             <!--勾选框-->
             <el-table-column type="selection" width="55"></el-table-column>
             <!--索引-->
 
-            <el-table-column prop="id" label="ID" ></el-table-column>
-            <el-table-column prop="picture" label="网站LOGO" ></el-table-column>
-            <el-table-column prop="title" label="站点名称" ></el-table-column>
-            <el-table-column prop="link" label="站点URL" ></el-table-column>
-            <el-table-column  fixed="right" label="操作" width="150">
+            <el-table-column label="ID" prop="id"></el-table-column>
+            <el-table-column label="网站LOGO" prop="">
               <template slot-scope="scope">
-                <el-button type="primary" plain size="small" @click="handleEdit(scope.$index,scope.row)">修改</el-button>
-                <el-button size="small" @click="handleDelete(scope.$index,scope.row)">删除</el-button>
+                <img :src="scope.row.picture" alt="" style="width: 50%">
+              </template>
+            </el-table-column>
+            <el-table-column label="站点名称" prop="title"></el-table-column>
+            <el-table-column label="站点URL" prop="link"></el-table-column>
+            <el-table-column label="发布状态" prop="">
+              <template slot-scope="scope">
+                <el-switch
+                  class="demo"
+                  :active-value="1"
+                  :inactive-value="0"
+                  @change="stateSwitch(scope.row)"
+                  active-color="#13ce66"
+                  inactive-color="#ff4949"
+                  active-text="开"
+                  inactive-text="关"
+                  v-model="scope.row.state">
+                </el-switch>
+              </template>
+            </el-table-column>
+            <el-table-column fixed="right" label="操作" width="150">
+              <template slot-scope="scope">
+                <el-button @click="handleEdit(scope.$index,scope.row)" plain size="small" type="primary">修改</el-button>
+                <el-button @click="handleDelete(scope.$index,scope.row)" size="small" type="danger">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -34,13 +54,20 @@
         <br>
         <br>
         <!-- 分页 -->
-        <el-pagination @current-change="getResult"  :current-page="currentPage" :page-size="pageSize" layout="total, prev, pager, next" :total="count" >
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[10, 50, 100, 200]"
+          :page-size="perPage"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total">
         </el-pagination>
       </div>
     </div>
 
     <!--新增界面-->
-    <el-dialog title="新增" :visible.sync="addFormVisible" :close-on-click-modal="false">
+    <el-dialog :close-on-click-modal="false" :visible.sync="addFormVisible" title="新增">
       <el-form :inline="true" :model="addForm" label-width="80px" ref="addForm">
         <div class="" style="text-align: center">
           <dl class="rows">
@@ -48,7 +75,7 @@
               <label><em>*</em>标题</label>
             </dt>
             <dd class="opt">
-              <input type="text" v-model="addForm.banner_title" class="el-input__inner">
+              <input class="el-input__inner" type="text" v-model="addForm.banner_title">
             </dd>
           </dl>
           <dl class="rows">
@@ -56,7 +83,7 @@
               <label><em>*</em>跳转链接</label>
             </dt>
             <dd class="opt">
-              <input type="text" v-model="addForm.banner_link" class="el-input__inner">
+              <input class="el-input__inner" type="text" v-model="addForm.banner_link">
             </dd>
           </dl>
 
@@ -65,8 +92,8 @@
               <label><em>*</em>开启状态</label>
             </dt>
             <dd class="opt" style="height: 48px">
-              <el-radio  v-model="addForm.state" label="1">开启</el-radio>
-              <el-radio  v-model="addForm.state" label="0">关闭</el-radio>
+              <el-radio label="1" v-model="addForm.state">开启</el-radio>
+              <el-radio label="0" v-model="addForm.state">关闭</el-radio>
             </dd>
           </dl>
 
@@ -75,53 +102,55 @@
               <label><em>*</em>上传类型</label>
             </dt>
             <dd class="opt" style="height: 48px">
-              <el-radio  v-model="addForm.banner_state" label="1">本地</el-radio>
-              <el-radio  v-model="addForm.banner_state" label="0">链接</el-radio>
+              <el-radio label="1" v-model="addForm.banner_state">本地</el-radio>
+              <el-radio label="0" v-model="addForm.banner_state">链接</el-radio>
             </dd>
           </dl>
 
           <!--本地上传-->
-          <dl v-if="addForm.banner_state==1" class="rows">
+          <dl class="rows" v-if="addForm.banner_state==1">
             <dt style="text-align: left;width: 150px;">
               <label><em>*</em>上传图片</label>
             </dt>
-            <dd class="opt" style="">
+            <dd class="opt">
               <!--element 图片上传-->
               <el-upload
-                action="//cms.com/admin/uploadImage"
-                list-type="picture-card"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
-                :on-success="success">
-                <i class="el-icon-plus"></i>
+                :on-success="success"
+                action="//cms.com/admin/uploadImage"
+                list-type="picture">
+                <div style="display: flex">
+                  <input class="el-input__inner" placeholder="图片上传" type="text">
+                  <el-button size="small" type="primary">点击上传</el-button>
+                </div>
               </el-upload>
               <el-dialog :visible.sync="dialogImg">
-                <img width="100%" :src="dialogImageUrl" alt="">
+                <img :src="dialogImageUrl" alt="" width="100%">
               </el-dialog>
             </dd>
           </dl>
 
           <!--链接上传-->
-          <dl v-if="addForm.banner_state==0" class="rows">
+          <dl class="rows" v-if="addForm.banner_state==0">
             <dt style="text-align: left;width: 150px;">
               <label><em>*</em>上传图片</label>
             </dt>
             <dd class="opt" style="">
-              <input type="text" v-model="addForm.banner_link_img" class="el-input__inner">
+              <input class="el-input__inner" type="text" v-model="addForm.banner_link_img">
             </dd>
           </dl>
 
-
         </div>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <div class="dialog-footer" slot="footer">
         <el-button @click="addFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="addSubmit" :loading="addLoading">提交</el-button>
+        <el-button :loading="addLoading" @click="addSubmit" type="primary">提交</el-button>
       </div>
     </el-dialog>
 
     <!--编辑界面-->
-    <el-dialog title="编辑" :visible.sync="editFormVisible" :close-on-click-modal="false">
+    <el-dialog :close-on-click-modal="false" :visible.sync="editFormVisible" title="编辑">
       <el-form :inline="true" :model="editForm" label-width="80px" ref="editForm">
         <div class="" style="text-align: center">
           <dl class="rows">
@@ -129,7 +158,7 @@
               <label><em>*</em>标题</label>
             </dt>
             <dd class="opt">
-              <input type="text" v-model="editForm.banner_title" class="banner_title el-input__inner">
+              <input class="banner_title el-input__inner" type="text" v-model="editForm.banner_title">
             </dd>
           </dl>
           <dl class="rows">
@@ -137,7 +166,7 @@
               <label><em>*</em>跳转链接</label>
             </dt>
             <dd class="opt">
-              <input type="text" v-model="editForm.banner_link" class="banner_link el-input__inner">
+              <input class="banner_link el-input__inner" type="text" v-model="editForm.banner_link">
             </dd>
           </dl>
 
@@ -146,8 +175,8 @@
               <label><em>*</em>开启状态</label>
             </dt>
             <dd class="opt" style="height: 48px">
-              <el-radio  v-model="editForm.state" label="1">开启</el-radio>
-              <el-radio  v-model="editForm.state" label="0">关闭</el-radio>
+              <el-radio label="1" v-model="editForm.state">开启</el-radio>
+              <el-radio label="0" v-model="editForm.state">关闭</el-radio>
             </dd>
           </dl>
 
@@ -156,48 +185,55 @@
               <label><em>*</em>上传类型</label>
             </dt>
             <dd class="opt" style="height: 48px">
-              <el-radio  v-model="editForm.banner_state" label="1" class="banner_state">本地</el-radio>
-              <el-radio  v-model="editForm.banner_state" label="0" class="banner_state">链接</el-radio>
+              <el-radio class="banner_state" label="1" v-model="editForm.banner_state">本地</el-radio>
+              <el-radio class="banner_state" label="0" v-model="editForm.banner_state">链接</el-radio>
             </dd>
           </dl>
 
           <!--本地上传-->
-          <dl v-if="editForm.banner_state==1" class="rows">
+          <dl class="rows" v-if="editForm.banner_state==1">
             <dt style="text-align: left;width: 150px;">
               <label><em>*</em>上传图片</label>
             </dt>
-            <dd class="opt" style="">
+            <dd class="opt">
               <!--element 图片上传-->
               <el-upload
-                action="/admin/uploadImage"
-                list-type="picture-card"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
-                :on-success="success">
-                <i class="el-icon-plus"></i>
+                :on-success="success"
+                action="//cms.com/admin/uploadImage"
+                list-type="picture">
+                <div style="display: flex">
+                  <input class="el-input__inner" name="address" placeholder="图片上传" type="text">
+                  <el-button @click="img_show" size="small" type="primary">点击上传</el-button>
+                </div>
               </el-upload>
+
+              <div class="imgshow" v-if="editForm.img">
+                <img :src="editForm.img" alt="" style="width: 70px;height: 70px;line-height: 70px;margin: auto 0px">
+                <div style="margin: auto 0px" v-if="editForm.img">{{editForm.img_name}}</div>
+              </div>
+
               <el-dialog :visible.sync="dialogImg">
-                <img width="100%" :src="dialogImageUrl" alt="">
+                <img :src="dialogImageUrl" alt="" width="100%">
               </el-dialog>
             </dd>
           </dl>
 
           <!--链接上传-->
-          <dl v-if="editForm.banner_state==0" class="rows">
+          <dl class="rows" v-if="editForm.banner_state==0">
             <dt style="text-align: left;width: 150px;">
               <label><em>*</em>上传图片</label>
             </dt>
             <dd class="opt" style="">
-              <input type="text" v-model="editForm.banner_link_img" class="el-input__inner">
+              <input class="el-input__inner" type="text" v-model="editForm.banner_link_img">
             </dd>
           </dl>
-
-
         </div>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <div class="dialog-footer" slot="footer">
         <el-button @click="editFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="editSubmit" :loading="editLoading">提交</el-button>
+        <el-button :loading="editLoading" @click="editSubmit" type="primary">提交</el-button>
       </div>
     </el-dialog>
   </section>
@@ -212,11 +248,10 @@
       return {
         // 提交栏目
         visible: false,
-        dialogVisible: false,
         dialogImageUrl: '',
         dialogImg: false,
-        disabled: false,
-
+        //本地图片上传
+        banner_img: '',
         //table返回的数据
         tableData: [],
 
@@ -226,9 +261,10 @@
         //批量选中data
         selectList: [],
         //分页
-        count: 0,
+        perPage: 10,
         currentPage: 1,
-        pageSize: 10,
+        total: 0,
+
 
         //新增界面是否显示
         addFormVisible: false,
@@ -237,19 +273,17 @@
         //新增界面数据
         addForm: {
           //标题
-          banner_title:'',
+          banner_title: '',
           //跳转链接
-          banner_link:'',
-          //本地图片上传
-          banner_img: '',
+          banner_link: '',
           //链接图片上传
-          banner_link_img:'',
+          banner_link_img: '',
           // 修改栏目
           bannerModify: false,
           //状态
-          state:'1',
+          state: '1',
           //图片上传方式
-          banner_state:'1',
+          banner_state: '1',
         },
 
         //编辑界面是否显示
@@ -258,30 +292,37 @@
         editLoading: false,
         //编辑界面数据
         editForm: {
+          //展示图片
+          img:'',
+          img_name:'',
           //标题
-          banner_title:'',
+          banner_title: '',
           //跳转链接
-          banner_link:'',
-          //本地图片上传
-          banner_img: '',
+          banner_link: '',
           //链接图片上传
-          banner_link_img:'',
+          banner_link_img: '',
           // 修改栏目
           bannerModify: false,
           //状态
-          state:'',
+          state: '',
           //图片上传方式
-          banner_state:'1',
+          banner_state: '1',
         },
       };
     },
     methods: {
-      //图片上传
-      handleRemove(file, fileList) {
-        console.log(file, fileList);
+      //分页
+      handleCurrentChange(val) {
+        this.currentPage = val
+        this.getResult()
       },
+      handleSizeChange(val) {
+        this.perPage = val
+        this.getResult()
+      },
+      //图片上传
+      handleRemove(file, fileList) {},
       handlePictureCardPreview(file) {
-        console.log(file)
         this.dialogImageUrl = file.url;
         this.dialogImg = true;
       },
@@ -289,14 +330,17 @@
         this.banner_img = response.data.newFileDir
       },
 
-      getResult: function() {
-        apis.cmsApi.bannerList()
+      getResult: function () {
+        var perPage = this.perPage,
+            page = this.currentPage;
+        apis.cmsApi.bannerList(perPage,page)
           .then(data => {
-            console.log(data.data.code)
-            if (data.data.code !== 200){
+            if (data.data.code !== 200) {
               alert(data.data.message)
-            }else {
+            } else {
               this.tableData = data.data.data.data
+              this.total = data.data.data.pagination.total;
+              $('.el-upload-list__item').hide()
             }
           })
           .catch(err => {
@@ -304,35 +348,63 @@
           });
       },
 
+      //状态开关
+      stateSwitch(data){
+        if (data.state == 1){
+          var state = 1
+        }
+        if (data.state == 0){
+          var state = 0
+        }
+        this.$ajax({
+          method: "get",
+          url: "//cms.com/admin/banner/open/"+data.id,
+          type: 'json',
+          params: {
+            state: state
+          }
+        }).then(res => {
+          this.listLoading = false;
+          this.getResult();
+        });
+      },
+
       //显示新增界面
-      handleAdd: function() {
+      handleAdd: function () {
         this.addFormVisible = true;
       },
       //新增
-      addSubmit: function() {
-        if (this.banner_state == 1){
-          var picture_path = this.addForm.banner_img
+      addSubmit: function () {
+        if (this.addForm.banner_state == 1) {
+          var picture_path = this.banner_img
         }
-        if (this.banner_state == 0) {
+        if (this.addForm.banner_state == 0) {
           var picture_path = this.addForm.banner_link_img
         }
         var param = {
           //状态
-          state:this.addForm.state,
+          state: this.addForm.state,
           //标题
           title: this.addForm.banner_title,
           //跳转链接
-          link:this.addForm.banner_link,
-          //本地图片上传
+          link: this.addForm.banner_link,
+          //图片上传
           picture: picture_path,
         }
         apis.cmsApi.bannerAdd(param).then(data => {
-          if (data.data.code == 200){
-            swal(data.data.message+"!", "", "success").then((value) => {
+          if (data.data.code == 200) {
+            swal(data.data.message + "!", "", "success").then((value) => {
               this.getResult()
+              this.addFormVisible = false;
+              //标题
+              this.addForm.banner_title = '';
+              //跳转链接
+              this.addForm.banner_link = '';
+
+              this.addForm.banner_link_img = '';
             });
-          }else {
-            swal(data.data.message+"!", "", "");
+          } else {
+            swal(data.data.message + "!", "", "");
           }
         })
           .catch(err => {
@@ -340,52 +412,56 @@
           });
       },
       //显示编辑界面
-      handleEdit: function(index, row) {
+      img_show:function(){
+        this.editForm.img = ''
+      },
+      handleEdit: function (index, row) {
         this.editFormVisible = true;
         apis.cmsApi.bannerDetails(row.id).then(data => {
-          if (data.data.code == 200){
-              //状态
-              this.editForm.state = data.data.data.state.toString(),
-              //标题
-              this.editForm.banner_title = data.data.data.title,
-              //跳转链接
-              this.editForm.banner_link = data.data.data.link,
+          if (data.data.code == 200) {
+            //状态
+            this.editForm.state = data.data.data.state.toString();
+            //标题
+            this.editForm.banner_title = data.data.data.title;
+            //跳转链接
+            this.editForm.banner_link = data.data.data.link;
+            //图片展示
+            this.editForm.img = '//cms.com'+data.data.data.picture;
+            //用正则获取img图片路径中的名称
+            this.editForm.img_name = data.data.data.picture.match(/\/(\w+\.(?:png|jpg|gif|bmp))$/i)[1];
 
-              window.banner_modify_submit_id = data.data.data.id
-          }else {
-            swal(data.data.message+"!", "", "");
+            window.banner_modify_submit_id = data.data.data.id
+          } else {
+            swal(data.data.message + "!", "", "");
           }
-        })
-          .catch(err => {
-
-          });
+        }).catch(err => {});
       },
       //编辑
-      editSubmit: function() {
-        if (this.banner_state == 1){
-          var picture_path = this.editForm.banner_img
+      editSubmit: function () {
+        if (this.editForm.banner_state == 1) {
+          var picture_path = this.banner_img
         }
-        if (this.banner_state == 0) {
+        if (this.editForm.banner_state == 0) {
           var picture_path = this.editForm.banner_link_img
         }
         var param = {
           //状态
-          state:this.editForm.state,
+          state: this.editForm.state,
           //标题
           title: this.editForm.banner_title,
           //跳转链接
-          link:this.editForm.banner_link,
-          //本地图片上传
+          link: this.editForm.banner_link,
+          //图片上传
           picture: picture_path,
         }
-        apis.cmsApi.bannerEdit(banner_modify_submit_id,param).then(data => {
-          if (data.data.code == 200){
+        apis.cmsApi.bannerEdit(banner_modify_submit_id, param).then(data => {
+          if (data.data.code == 200) {
             this.editFormVisible = false;
-            swal(data.data.message+"!", "", "success").then((value) => {
+            swal(data.data.message + "!", "", "success").then((value) => {
               this.getResult()
             });
-          }else {
-            swal(data.data.message+"!", "", "");
+          } else {
+            swal(data.data.message + "!", "", "");
           }
         })
           .catch(err => {
@@ -393,14 +469,13 @@
           });
       },
       //批量选中
-      selectChange: function(val) {
+      selectChange: function (val) {
         this.selectList = val;
       },
       //单个删除
-      handleDelete:function(index, row){
+      handleDelete: function (index, row) {
         var idArray = new Array()
         idArray.push(row.id)
-        alert(idArray)
         this.$confirm("确认删除该记录吗?", "提示", {
           type: "warning"
         })
@@ -410,9 +485,9 @@
               method: "post",
               url: "//cms.com/admin/banner/del",
               data: {
-                ids:idArray
+                ids: idArray
               },
-              type:'json'
+              type: 'json'
             }).then(res => {
               this.listLoading = false;
               this.$message({
@@ -423,29 +498,26 @@
               this.getResult();
             });
           })
-          .catch(() => {});
+          .catch(() => {
+          });
       },
       //批量删除
-      handleDeleteList: function() {
+      handleDeleteList: function () {
         const length = this.selectList.length;
-        let id = "";
-        for (let i = 0; i < length; i++) {
-          id += this.selectList[i].id + ",";
-        }
-        //去掉结尾,
-        id = id.substring(0, id.length - 1);
         var idArray = new Array()
-        idArray.push(id)
+        for (let i = 0; i < length; i++) {
+          idArray.push(this.selectList[i].id)
+        }
         this.$confirm("确认删除该记录吗?", "提示", {
           type: "warning"
         })
           .then(() => {
             this.listLoading = true;
             this.$ajax({
-              method: "GET",
+              method: "post",
               url: "//cms.com/admin/banner/del",
               data: {
-                ids:idArray
+                ids: idArray
               }
             }).then(res => {
               this.listLoading = false;
@@ -457,7 +529,8 @@
               this.getResult();
             });
           })
-          .catch(() => {});
+          .catch(() => {
+          });
       },
     },
     mounted() {
@@ -491,6 +564,15 @@
 
   .opt {
     width: 260px;
+  }
+
+  .imgshow{
+    width: 260px;height: 90px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-around;
+    border: 1px solid #c0ccda;
+    border-radius: 6px;
   }
 
   .tit {

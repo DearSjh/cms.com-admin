@@ -4,7 +4,7 @@
       <!-- 页面标题begin -->
       <div class="crumbs">
         <el-breadcrumb separator="/">
-          <el-breadcrumb-item><i class="el-icon-tickets"></i>轮播管理</el-breadcrumb-item>
+          <el-breadcrumb-item><i class="el-icon-tickets"></i>招聘管理</el-breadcrumb-item>
         </el-breadcrumb>
       </div>
       <!-- 页面内容区begin -->
@@ -29,7 +29,7 @@
             <el-table-column  fixed="right" label="操作" width="150">
               <template slot-scope="scope">
                 <el-button type="primary" plain size="small" @click="handleEdit(scope.$index,scope.row)">修改</el-button>
-                <el-button size="small" @click="handleDelete(scope.$index,scope.row)">删除</el-button>
+                <el-button size="small" @click="handleDelete(scope.$index,scope.row)" type="danger">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -330,9 +330,9 @@
         //新增界面数据
         addForm: {
           //发布状态
-          jobs_state:'',
+          jobs_state:'1',
           //性别
-          jobs_gender:'',
+          jobs_gender:'1',
           jobs_img: '',
           jobs_name : '',
           jobs_place : '',
@@ -376,11 +376,8 @@
     },
     methods: {
       //图片上传
-      handleRemove(file, fileList) {
-        console.log(file, fileList);
-      },
+      handleRemove(file, fileList) {},
       handlePictureCardPreview(file) {
-        console.log(file)
         this.dialogImageUrl = file.url;
         this.dialogImg = true;
       },
@@ -391,11 +388,14 @@
       getResult: function() {
         apis.cmsApi.recruitmentList()
           .then(data => {
-            console.log(data.data.code)
             if (data.data.code !== 200){
               alert(data.data.message)
             }else {
-              this.tableData = data.data.data.data
+              this.tableData = data.data.data.data;
+              this.count = data.data.data.pagination.count;
+              this.currentPage = data.data.data.pagination.currentPage;
+              this.pageSize = data.data.data.pagination.perPage;
+              $('.el-upload-list__item').hide()
             }
           })
           .catch(err => {
@@ -509,7 +509,6 @@
       handleDelete:function(index, row){
         var idArray = new Array()
         idArray.push(row.id)
-        alert(idArray)
         this.$confirm("确认删除该记录吗?", "提示", {
           type: "warning"
         })
@@ -599,7 +598,7 @@
   }
 
   .opt {
-    width: 260px;
+    width: 350px;
   }
 
   .tit {

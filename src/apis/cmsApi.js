@@ -5,14 +5,14 @@ var api = '//cms.com'
 /******相关接口*****/
 export default {
   //网站信息配置
-  webinfo:function(){
-    return Axios.post(api+'/admin/webInfo')
+  webinfo:function(param){
+    return Axios.post(api+'/admin/webInfo/basic',param)
   },
 
 
   //轮播图
-  bannerList:function(){
-    return Axios.get(api+'/admin/banner/list');
+  bannerList:function(perPage,page){
+    return Axios.get(api+'/admin/banner/list?'+'perPage='+perPage+'&page='+page);
   },
   //增加轮播图
   bannerAdd:function(param){
@@ -29,11 +29,15 @@ export default {
 
 
   //栏目列表
-  categoryList:function(){
-    return Axios.get(api+'/admin/category/list');
+  categoryList:function(perPage,page){
+    return Axios.get(api+'/admin/category/list?'+'perPage='+perPage+'&page='+page);
   },
   //增加栏目
   categoryAdd:function(param){
+    return Axios.post(api+'/admin/category/add', param);
+  },
+  //增加栏目
+  categoryAddChild:function(param){
     return Axios.post(api+'/admin/category/add', param);
   },
   //栏目详情
@@ -46,9 +50,27 @@ export default {
   },
 
 
+  //内容列表
+  articleList:function(perPage,page){
+    return Axios.get(api+'/admin/article/list?'+'perPage='+perPage+'&page='+page);
+  },
+  //增加内容
+  articleAdd:function(param){
+    return Axios.post(api+'/admin/article/add', param);
+  },
+  //内容详情
+  articleDetails:function(id){
+    return Axios.get(api+'/admin/article/edit/'+id);
+  },
+  //内容编辑
+  articleEdit:function(id,param){
+    return Axios.post(api+'/admin/article/edit/'+id,param);
+  },
+
+
   //友情链接
-  friendLinkList:function(){
-    return Axios.get(api+'/admin/friendLink/list');
+  friendLinkList:function(perPage,page){
+    return Axios.get(api+'/admin/friendLink/list?'+'perPage='+perPage+'&page='+page);
   },
   //增加友情链接
   friendLinkAdd:function(param){
@@ -83,8 +105,8 @@ export default {
 
 
   //自定义数据管理
-  customList:function(){
-    return Axios.get(api+'/admin/customData/list');
+  customList:function(perPage,page){
+    return Axios.get(api+'/admin/customData/list?'+'perPage='+perPage+'&page='+page);
   },
   //增加自定义数据
   customAdd:function(param){
@@ -101,19 +123,11 @@ export default {
 
 
   //留言管理
-  msgList:function(){
-    return Axios.get(api+'/admin/customData/list');
-  },
-  //增加留言
-  msgAdd:function(param){
-    return Axios.post(api+'/admin/customData/add', param);
+  msgList:function(perPage,page){
+    return Axios.get(api+'/admin/message/list?'+'perPage='+perPage+'&page='+page);
   },
   //留言详情
   msgDetails:function(id){
-    return Axios.get(api+'/admin/customData/edit/'+id);
-  },
-  //留言编辑
-  msgEdit:function(id,param){
-    return Axios.post(api+'/admin/customData/edit/'+id,param);
+    return Axios.get(api+'/admin/message/edit/'+id);
   },
 }

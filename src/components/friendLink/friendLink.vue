@@ -4,7 +4,7 @@
       <!-- 页面标题begin -->
       <div class="crumbs">
         <el-breadcrumb separator="/">
-          <el-breadcrumb-item><i class="el-icon-tickets"></i>轮播管理</el-breadcrumb-item>
+          <el-breadcrumb-item><i class="el-icon-tickets"></i>友情链接管理</el-breadcrumb-item>
         </el-breadcrumb>
       </div>
       <!-- 页面内容区begin -->
@@ -20,13 +20,32 @@
             <!--索引-->
 
             <el-table-column prop="id" label="ID" ></el-table-column>
-            <el-table-column prop="picture" label="网站LOGO" ></el-table-column>
-            <el-table-column prop="title" label="站点名称" ></el-table-column>
+            <el-table-column prop="" label="网站LOGO" >
+              <template slot-scope="scope">
+                <img :src="scope.row.picture" alt="" style="width: 50%">
+              </template>
+            </el-table-column>
+            <el-table-column prop="name" label="站点名称" ></el-table-column>
             <el-table-column prop="link" label="站点URL" ></el-table-column>
+            <el-table-column label="发布状态" prop="">
+              <template slot-scope="scope">
+                <el-switch
+                  class="demo"
+                  :active-value="1"
+                  :inactive-value="0"
+                  @change="stateSwitch(scope.row)"
+                  active-color="#13ce66"
+                  inactive-color="#ff4949"
+                  active-text="开"
+                  inactive-text="关"
+                  v-model="scope.row.state">
+                </el-switch>
+              </template>
+            </el-table-column>
             <el-table-column  fixed="right" label="操作" width="150">
               <template slot-scope="scope">
                 <el-button type="primary" plain size="small" @click="handleEdit(scope.$index,scope.row)">修改</el-button>
-                <el-button size="small" @click="handleDelete(scope.$index,scope.row)">删除</el-button>
+                <el-button size="small" @click="handleDelete(scope.$index,scope.row)" type="danger">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -34,7 +53,14 @@
         <br>
         <br>
         <!-- 分页 -->
-        <el-pagination @current-change="getResult"  :current-page="currentPage" :page-size="pageSize" layout="total, prev, pager, next" :total="count" >
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[10, 50, 100, 200]"
+          :page-size="perPage"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total">
         </el-pagination>
       </div>
     </div>
@@ -68,10 +94,10 @@
             </dd>
           </dl>
           <dl class="rows">
-            <dt style="text-align: left;width: 150px;">
+            <dt style="text-align: left;width: 182px;">
               <label><em></em>发布状态</label>
             </dt>
-            <dd class="opt" style="margin: 10px 0px">
+            <dd class="opt">
               <el-radio v-model="addForm.link_state" label="1">已发布</el-radio>
               <el-radio v-model="addForm.link_state" label="0">未发布</el-radio>
             </dd>
@@ -88,15 +114,18 @@
             <dt style="text-align: left;width: 150px;">
               <label><em></em>图片</label>
             </dt>
-            <dd class="opt">
+            <dd>
               <!--element 图片上传-->
               <el-upload
                 action="//cms.com/admin/uploadImage"
-                list-type="picture-card"
+                list-type="picture"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
                 :on-success="success">
-                <i class="el-icon-plus"></i>
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" type="text" style="width: 300px">
+                  <el-button size="small" type="primary">点击上传</el-button>
+                </div>
               </el-upload>
               <el-dialog :visible.sync="dialogImg">
                 <img width="100%" :src="dialogImageUrl" alt="">
@@ -140,10 +169,10 @@
             </dd>
           </dl>
           <dl class="rows">
-            <dt style="text-align: left;width: 150px;">
+            <dt style="text-align: left;width: 182px;">
               <label><em></em>发布状态</label>
             </dt>
-            <dd class="opt" style="margin: 10px 0px">
+            <dd class="opt">
               <el-radio v-model="editForm.link_state" label="1">已发布</el-radio>
               <el-radio v-model="editForm.link_state" label="0">未发布</el-radio>
             </dd>
@@ -160,16 +189,25 @@
             <dt style="text-align: left;width: 150px;">
               <label><em></em>图片</label>
             </dt>
-            <dd class="opt">
+            <dd>
               <!--element 图片上传-->
               <el-upload
                 action="//cms.com/admin/uploadImage"
-                list-type="picture-card"
+                list-type="picture"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
                 :on-success="success">
-                <i class="el-icon-plus"></i>
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" type="text" style="width: 300px">
+                  <el-button size="small" type="primary" @click="img_show">点击上传</el-button>
+                </div>
               </el-upload>
+
+              <div class="imgshow" v-if="editForm.img">
+                <img :src="editForm.img" alt="" style="width: 70px;height: 70px;line-height: 70px;margin: auto 0px">
+                <div style="margin: auto 0px" v-if="editForm.img">{{editForm.img_name}}</div>
+              </div>
+
               <el-dialog :visible.sync="dialogImg">
                 <img width="100%" :src="dialogImageUrl" alt="">
               </el-dialog>
@@ -198,7 +236,7 @@
         dialogImageUrl: '',
         dialogImg: false,
         disabled: false,
-
+        link_img:'',
         //table返回的数据
         tableData: [],
 
@@ -208,9 +246,9 @@
         //批量选中data
         selectList: [],
         //分页
-        count: 0,
+        perPage: 10,
         currentPage: 1,
-        pageSize: 10,
+        total: 0,
 
         //新增界面是否显示
         addFormVisible: false,
@@ -220,10 +258,10 @@
         addForm: {
           web_name:'',
           web_note:'',
-          link_img:'',
+
           link_name:'',
           link_sorting:'',
-          link_state:'',
+          link_state:'1',
         },
 
         //编辑界面是否显示
@@ -234,20 +272,28 @@
         editForm: {
           web_name:'',
           web_note:'',
-          link_img:'',
           link_name:'',
           link_sorting:'',
           link_state:'',
+          //展示图片
+          img:'',
+          img_name:'',
         },
       };
     },
     methods: {
-      //图片上传
-      handleRemove(file, fileList) {
-        console.log(file, fileList);
+      //分页
+      handleCurrentChange(val) {
+        this.currentPage = val
+        this.getResult()
       },
+      handleSizeChange(val) {
+        this.perPage = val
+        this.getResult()
+      },
+      //图片上传
+      handleRemove(file, fileList) {},
       handlePictureCardPreview(file) {
-        console.log(file)
         this.dialogImageUrl = file.url;
         this.dialogImg = true;
       },
@@ -255,14 +301,38 @@
         this.link_img = response.data.newFileDir
       },
 
+      //状态开关
+      stateSwitch(data){
+        if (data.state == 1){
+          var state = 1
+        }
+        if (data.state == 0){
+          var state = 0
+        }
+        this.$ajax({
+          method: "get",
+          url: "//cms.com/admin/friendLink/open/"+data.id,
+          type: 'json',
+          params: {
+            state: state
+          }
+        }).then(res => {
+          this.listLoading = false;
+          this.getResult();
+        });
+      },
+
       getResult: function() {
-        apis.cmsApi.friendLinkList()
+        var perPage = this.perPage,
+          page = this.currentPage;
+        apis.cmsApi.friendLinkList(perPage,page)
           .then(data => {
-            console.log(data.data.code)
             if (data.data.code !== 200){
               alert(data.data.message)
             }else {
               this.tableData = data.data.data.data
+              this.total = data.data.data.pagination.total;
+              $('.el-upload-list__item').hide()
             }
           })
           .catch(err => {
@@ -279,7 +349,7 @@
         var param = {
           name: this.addForm.web_name,
           note:  this.addForm.web_note,
-          picture: this.addForm.link_img,
+          picture: this.link_img,
           link:  this.addForm.link_name,
           sort:  this.addForm.link_sorting,
           state: this.addForm.link_state
@@ -288,6 +358,7 @@
           if (data.data.code == 200){
             swal(data.data.message+"!", "", "success").then((value) => {
               this.getResult()
+              this.addFormVisible = false;
             });
           }else {
             swal(data.data.message+"!", "", "");
@@ -298,6 +369,9 @@
           });
       },
       //显示编辑界面
+      img_show:function(){
+        this.editForm.img = ''
+      },
       handleEdit: function(index, row) {
         this.editFormVisible = true;
         apis.cmsApi.friendLinkDetails(row.id).then(data => {
@@ -307,8 +381,12 @@
               this.editForm.link_name = data.data.data.link;
               this.editForm.link_sorting = data.data.data.sort;
               this.editForm.link_state = data.data.data.state.toString()
-
               window.friendLink_modify_submit_id = data.data.data.id
+
+              //图片展示
+              this.editForm.img = '//cms.com'+data.data.data.picture;
+              //用正则获取img图片路径中的名称
+              this.editForm.img_name = data.data.data.picture.match(/\/(\w+\.(?:png|jpg|gif|bmp))$/i)[1];
           }else {
             swal(data.data.message+"!", "", "");
           }
@@ -319,16 +397,10 @@
       },
       //编辑
       editSubmit: function() {
-        if (this.banner_state == 1){
-          var picture_path = this.editForm.banner_img
-        }
-        if (this.banner_state == 0) {
-          var picture_path = this.editForm.banner_link_img
-        }
         var param = {
           name: this.addForm.web_name,
           note:  this.addForm.web_note,
-          picture: this.addForm.link_img,
+          picture: this.link_img,
           link:  this.addForm.link_name,
           sort:  this.addForm.link_sorting,
           state: this.addForm.link_state
@@ -342,10 +414,7 @@
           }else {
             swal(data.data.message+"!", "", "");
           }
-        })
-          .catch(err => {
-
-          });
+        }).catch(err => {});
       },
       //批量选中
       selectChange: function(val) {
@@ -355,7 +424,6 @@
       handleDelete:function(index, row){
         var idArray = new Array()
         idArray.push(row.id)
-        alert(idArray)
         this.$confirm("确认删除该记录吗?", "提示", {
           type: "warning"
         })
@@ -397,7 +465,7 @@
           .then(() => {
             this.listLoading = true;
             this.$ajax({
-              method: "GET",
+              method: "post",
               url: "//cms.com/admin/friendLink/del",
               data: {
                 ids:idArray
@@ -438,6 +506,15 @@
     margin: 10px 0px;
   }
 
+  .imgshow{
+    width: 260px;height: 90px;
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-around;
+    border: 1px solid #c0ccda;
+    border-radius: 6px;
+  }
+
   .rows-text {
     text-align: left;
     width: 100px;
@@ -445,7 +522,7 @@
   }
 
   .opt {
-    width: 260px;
+    width: 350px;
   }
 
   .tit {

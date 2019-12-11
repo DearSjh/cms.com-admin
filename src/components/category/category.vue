@@ -10,30 +10,51 @@
       <!-- 页面内容区begin -->
       <div class="container">
         <!--新增按钮-->
-        <el-button type="success" icon="el-icon-circle-plus-outline" @click="handleAdd" size="mini" round>新增</el-button>
-        <el-button type="danger" icon="el-icon-delete" @click="handleDeleteList" size="mini" round>删除</el-button>
+        <el-button @click="handleAdd" icon="el-icon-circle-plus-outline" round size="mini" type="success">新增</el-button>
+        <el-button @click="handleDeleteList" icon="el-icon-delete" round size="mini" type="danger">删除</el-button>
         <template>
           <!--表格数据及操作-->
-          <el-table :data="tableData" size="mini"  highlight-current-row border   class="el-tb-edit mgt20" ref="multipleTable" tooltip-effect="dark" v-loading="listLoading" @selection-change="selectChange">
+          <el-table
+            :data="tableData"
+            :tree-props="{children: 'child', hasChildren: 'hasChildren'}"
+            @selection-change="selectChange"
+            border
+            class="el-tb-edit mgt20 el-icon-plus"
+            highlight-current-row
+            lazy ref="multipleTable"
+            row-key="id"
+            size="mini" style="width: 100%" tooltip-effect="dark" v-loading="listLoading">
             <!--勾选框-->
             <el-table-column type="selection" width="55"></el-table-column>
             <!--索引-->
-
-            <el-table-column prop="id" label="ID" >
-            </el-table-column>
-            <el-table-column prop="name" label="栏目名称" >
-            </el-table-column>
-            <el-table-column prop="" label="添加子栏目" >
+            <el-table-column label="栏目名称" prop="name" ></el-table-column>
+            <el-table-column label="ID" prop="id" ></el-table-column>
+            <el-table-column label="添加子栏目" prop="" >
               <template slot-scope="scope">
-                <el-button size="small" @click="handleEdit(scope.$index,scope.row)">添加子栏目</el-button>
+                <el-button @click="addChildCategory(scope.$index,scope.row)" size="small">添加子栏目</el-button>
               </template>
             </el-table-column>
-            <el-table-column prop="sort" label="排序" >
+            <el-table-column label="排序" prop="sort" >
+            </el-table-column>
+            <el-table-column label="发布状态" prop="">
+              <template slot-scope="scope">
+                <el-switch
+                  class="demo"
+                  :active-value="1"
+                  :inactive-value="0"
+                  @change="stateSwitch(scope.row)"
+                  active-color="#13ce66"
+                  inactive-color="#ff4949"
+                  active-text="开"
+                  inactive-text="关"
+                  v-model="scope.row.state">
+                </el-switch>
+              </template>
             </el-table-column>
             <el-table-column  fixed="right" label="操作" width="150">
               <template slot-scope="scope">
-                <el-button type="primary" plain size="small" @click="handleEdit(scope.$index,scope.row)">修改</el-button>
-                <el-button size="small" @click="handleDelete(scope.$index,scope.row)">删除</el-button>
+                <el-button @click="handleEdit(scope.$index,scope.row)" plain size="small" type="primary">修改</el-button>
+                <el-button @click="handleDelete(scope.$index,scope.row)" size="small" type="danger">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -41,39 +62,28 @@
         <br>
         <br>
         <!-- 分页 -->
-        <el-pagination @current-change="getResult"  :current-page="currentPage" :page-size="pageSize" layout="total, prev, pager, next" :total="count" >
+        <el-pagination
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+          :current-page="currentPage"
+          :page-sizes="[10, 50, 100, 200]"
+          :page-size="perPage"
+          layout="total, sizes, prev, pager, next, jumper"
+          :total="total">
         </el-pagination>
       </div>
     </div>
 
     <!--新增界面-->
-    <el-dialog title="新增" :visible.sync="addFormVisible" :close-on-click-modal="false">
+    <el-dialog :close-on-click-modal="false" :visible.sync="addFormVisible" title="新增">
       <el-form :inline="true" :model="addForm" label-width="80px" ref="addForm">
         <div class="" style="text-align: center">
           <dl class="rows">
             <dt class="rows-text">
-              <label><em></em>栏目名称</label>
+              <label><em>*</em>栏目名称</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_name el-input__inner" v-model="addForm.column_name">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
-            </dd>
-          </dl>
-          <dl class="rows">
-            <dt class="rows-text">
-              <label><em></em>所属栏目</label>
-            </dt>
-            <dd class="opt">
-              <input type="text" value="" class="column_belongs el-input__inner" v-model="addForm.column_belongs">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_name el-input__inner" type="text" v-model="addForm.column_name" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -81,25 +91,25 @@
               <label><em></em>栏目类型</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_type el-input__inner" v-model="addForm.column_type">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <el-radio label="1" v-model="addForm.column_type">单页</el-radio>
+              <el-radio label="2" v-model="addForm.column_type">列表</el-radio>
             </dd>
           </dl>
           <dl class="rows">
             <dt class="rows-text">
-              <label><em></em>目录名称</label>
+              <label><em></em>开启状态</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="directory_name el-input__inner" v-model="addForm.directory_name">
+              <el-radio label="1" v-model="addForm.state">开启</el-radio>
+              <el-radio label="0" v-model="addForm.state">关闭</el-radio>
             </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em>*</em>目录名称</label>
+            </dt>
+            <dd class="opt">
+              <input class="directory_name el-input__inner" type="text" v-model="addForm.dir_name" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -107,12 +117,7 @@
               <label><em></em>跳转链接</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_link el-input__inner" v-model="addForm.column_link">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_link el-input__inner" type="text" v-model="addForm.column_link" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -120,12 +125,7 @@
               <label><em></em>SEO标题</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_SEO el-input__inner" v-model="addForm.column_SEO">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_SEO el-input__inner" type="text" v-model="addForm.column_SEO" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -133,12 +133,7 @@
               <label><em></em>关键字</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_keyword el-input__inner" v-model="addForm.column_keyword">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_keyword el-input__inner" type="text" v-model="addForm.column_keyword" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -146,27 +141,25 @@
               <label><em></em>排序</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_sorting el-input__inner" v-model="addForm.column_sorting">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_sorting el-input__inner" type="text" v-model="addForm.column_sorting" value="">
             </dd>
           </dl>
           <dl class="rows">
             <dt class="rows-text">
               <label><em></em>图片</label>
             </dt>
-            <dd>
+            <dd class="opt">
               <!--element 图片上传-->
               <el-upload
                 action="//cms.com/admin/uploadImage"
-                list-type="picture-card"
+                list-type="picture"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
                 :on-success="success">
-                <i class="el-icon-plus"></i>
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" name="address" type="text" style="width: 300px;">
+                  <el-button size="small" type="primary">点击上传</el-button>
+                </div>
               </el-upload>
               <el-dialog :visible.sync="dialogImg">
                 <img width="100%" :src="dialogImageUrl" alt="">
@@ -176,14 +169,115 @@
 
         </div>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <div class="dialog-footer" slot="footer">
         <el-button @click="addFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="addSubmit" :loading="addLoading">提交</el-button>
+        <el-button :loading="addLoading" @click="addSubmit" type="primary">提交</el-button>
+      </div>
+    </el-dialog>
+
+    <!--新增子栏目界面-->
+    <el-dialog :close-on-click-modal="false" :visible.sync="addFormChildCategory" title="新增">
+      <el-form :inline="true" :model="addChildForm" label-width="80px" ref="addForm">
+        <div class="" style="text-align: center">
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em>*</em>栏目名称</label>
+            </dt>
+            <dd class="opt">
+              <input class="column_name el-input__inner" type="text" v-model="addChildForm.column_name" value="">
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>栏目类型</label>
+            </dt>
+            <dd class="opt">
+              <el-radio label="1" v-model="addChildForm.column_type">单页</el-radio>
+              <el-radio label="2" v-model="addChildForm.column_type">列表</el-radio>
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>开启状态</label>
+            </dt>
+            <dd class="opt">
+              <el-radio label="1" v-model="addChildForm.state">开启</el-radio>
+              <el-radio label="2" v-model="addChildForm.state">关闭</el-radio>
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em>*</em>目录名称</label>
+            </dt>
+            <dd class="opt">
+              <input class="directory_name el-input__inner" type="text" v-model="addChildForm.dir_name" value="">
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>跳转链接</label>
+            </dt>
+            <dd class="opt">
+              <input class="column_link el-input__inner" type="text" v-model="addChildForm.column_link" value="">
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>SEO标题</label>
+            </dt>
+            <dd class="opt">
+              <input class="column_SEO el-input__inner" type="text" v-model="addChildForm.column_SEO" value="">
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>关键字</label>
+            </dt>
+            <dd class="opt">
+              <input class="column_keyword el-input__inner" type="text" v-model="addChildForm.column_keyword" value="">
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>排序</label>
+            </dt>
+            <dd class="opt">
+              <input class="column_sorting el-input__inner" type="text" v-model="addChildForm.column_sorting" value="">
+            </dd>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>图片</label>
+            </dt>
+            <dd class="opt">
+              <!--element 图片上传-->
+              <el-upload
+                action="//cms.com/admin/uploadImage"
+                list-type="picture"
+                :on-preview="handlePictureCardPreview"
+                :on-remove="handleRemove"
+                :on-success="success">
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" name="address" type="text" style="width: 300px;">
+                  <el-button size="small" type="primary">点击上传</el-button>
+                </div>
+              </el-upload>
+              <el-dialog :visible.sync="dialogImg">
+                <img width="100%" :src="dialogImageUrl" alt="">
+              </el-dialog>
+            </dd>
+          </dl>
+
+        </div>
+      </el-form>
+      <div class="dialog-footer" slot="footer">
+        <el-button @click="addFormChildCategory = false">取消</el-button>
+        <el-button :loading="addChildLoading" @click="addChildCategorySubmit" type="primary">提交</el-button>
       </div>
     </el-dialog>
 
     <!--编辑界面-->
-    <el-dialog title="编辑" :visible.sync="editFormVisible" :close-on-click-modal="false">
+    <el-dialog :close-on-click-modal="false" :visible.sync="editFormVisible" title="编辑">
       <el-form :inline="true" :model="editForm" label-width="80px" ref="editForm">
         <div class="" style="text-align: center">
           <dl class="rows">
@@ -191,25 +285,9 @@
               <label><em></em>栏目名称</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_name el-input__inner" v-model="editForm.column_name">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
-            </dd>
-          </dl>
-          <dl class="rows">
-            <dt class="rows-text">
-              <label><em></em>所属栏目</label>
-            </dt>
-            <dd class="opt">
-              <input type="text" value="" class="column_belongs el-input__inner" v-model="editForm.column_belongs">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <div class="block">
+                <input class="column_belongs el-input__inner" type="text" v-model="editForm.column_name" value="">
+              </div>
             </dd>
           </dl>
           <dl class="rows">
@@ -217,12 +295,17 @@
               <label><em></em>栏目类型</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_type el-input__inner" v-model="editForm.column_type">
+              <el-radio label="1" v-model="editForm.column_type">单页</el-radio>
+              <el-radio label="2" v-model="editForm.column_type">列表</el-radio>
             </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+          </dl>
+          <dl class="rows">
+            <dt class="rows-text">
+              <label><em></em>开启状态</label>
+            </dt>
+            <dd class="opt">
+              <el-radio label="1" v-model="editForm.state">开启</el-radio>
+              <el-radio label="0" v-model="editForm.state">关闭</el-radio>
             </dd>
           </dl>
           <dl class="rows">
@@ -230,12 +313,7 @@
               <label><em></em>目录名称</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="directory_name el-input__inner" v-model="editForm.directory_name">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="directory_name el-input__inner" type="text" v-model="editForm.dir_name" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -243,12 +321,7 @@
               <label><em></em>跳转链接</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_link el-input__inner" v-model="editForm.column_link">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_link el-input__inner" type="text" v-model="editForm.column_link" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -256,12 +329,7 @@
               <label><em></em>SEO标题</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_SEO el-input__inner" v-model="editForm.column_SEO">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_SEO el-input__inner" type="text" v-model="editForm.column_SEO" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -269,12 +337,7 @@
               <label><em></em>关键字</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_keyword el-input__inner" v-model="editForm.column_keyword">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_keyword el-input__inner" type="text" v-model="editForm.column_keyword" value="">
             </dd>
           </dl>
           <dl class="rows">
@@ -282,28 +345,32 @@
               <label><em></em>排序</label>
             </dt>
             <dd class="opt">
-              <input type="text" value="" class="column_sorting el-input__inner" v-model="editForm.column_sorting">
-            </dd>
-            <dd class="tit">
-              <el-tooltip class="item" effect="dark" content="Right Center 提示文字" placement="right">
-                <i class="el-icon-question tit-i"></i>
-              </el-tooltip>
+              <input class="column_sorting el-input__inner" type="text" v-model="editForm.column_sorting" value="">
             </dd>
           </dl>
           <dl class="rows">
             <dt class="rows-text">
               <label><em></em>图片</label>
             </dt>
-            <dd>
+            <dd class="opt">
               <!--element 图片上传-->
               <el-upload
                 action="//cms.com/admin/uploadImage"
-                list-type="picture-card"
+                list-type="picture"
                 :on-preview="handlePictureCardPreview"
                 :on-remove="handleRemove"
                 :on-success="success">
-                <i class="el-icon-plus"></i>
+                <div style="display: flex">
+                  <input placeholder="图片上传" class="el-input__inner" name="address" type="text" style="width: 300px;">
+                  <el-button size="small" type="primary" @click="img_show">点击上传</el-button>
+                </div>
               </el-upload>
+
+              <div class="imgshow" v-if="editForm.img">
+                <img :src="editForm.img" alt="" style="height: 70px;line-height: 70px;margin: auto 0px">
+                <div style="margin: auto 0px">{{editForm.img_name}}</div>
+              </div>
+
               <el-dialog :visible.sync="dialogImg">
                 <img width="100%" :src="dialogImageUrl" alt="">
               </el-dialog>
@@ -312,9 +379,9 @@
 
         </div>
       </el-form>
-      <div slot="footer" class="dialog-footer">
+      <div class="dialog-footer" slot="footer">
         <el-button @click="editFormVisible = false">取消</el-button>
-        <el-button type="primary" @click="editSubmit" :loading="editLoading">提交</el-button>
+        <el-button :loading="editLoading" @click="editSubmit" type="primary">提交</el-button>
       </div>
     </el-dialog>
   </section>
@@ -326,12 +393,17 @@
     name: 'category',
     data() {
       return {
-        // 提交栏目
+        categoryType: [{
+          value: '1',
+          label: '单页'
+        }, {
+          value: '2',
+          label: '列表'
+        }],
+
         dialogImageUrl: '',
         dialogImg: false,
-
-        // 修改栏目
-        columnModify: false,
+        column_img: '',
 
         //table返回的数据
         tableData: [],
@@ -342,9 +414,9 @@
         //批量选中data
         selectList: [],
         //分页
-        count: 0,
+        perPage: 10,
         currentPage: 1,
-        pageSize: 10,
+        total: 0,
 
         //新增界面是否显示
         addFormVisible: false,
@@ -352,11 +424,28 @@
         addLoading: false,
         //新增界面数据
         addForm: {
-          column_type: '',
+          state:'1',
+          column_type: '1',
           column_belongs: '',
           column_name: '',
           dir_name: '',
-          column_img: '',
+          column_link: '',
+          column_SEO: '',
+          column_keyword: '',
+          column_sorting: '',
+        },
+
+        //新增子栏目界面是否显示
+        addFormChildCategory: false,
+        //添加按钮Loading加载
+        addChildLoading: false,
+        //子栏目界面数据
+        addChildForm: {
+          state:'1',
+          column_type: '1',
+          column_belongs: '',
+          column_name: '',
+          dir_name: '',
           column_link: '',
           column_SEO: '',
           column_keyword: '',
@@ -369,11 +458,14 @@
         editLoading: false,
         //编辑界面数据
         editForm: {
+          //展示图片
+          img:'',
+          img_name:'',
+          state:'',
           column_type: '',
           column_belongs: '',
           column_name: '',
           dir_name: '',
-          column_img: '',
           column_link: '',
           column_SEO: '',
           column_keyword: '',
@@ -382,12 +474,19 @@
       };
     },
     methods: {
-      //图片上传
-      handleRemove(file, fileList) {
-        console.log(file, fileList);
+      //分页
+      handleCurrentChange(val) {
+        this.currentPage = val
+        this.getResult()
       },
+      handleSizeChange(val) {
+        this.perPage = val
+        this.getResult()
+      },
+
+      //图片上传
+      handleRemove(file, fileList) {},
       handlePictureCardPreview(file) {
-        console.log(file)
         this.dialogImageUrl = file.url;
         this.dialogImg = true;
       },
@@ -396,13 +495,17 @@
       },
 
       getResult: function() {
-        apis.cmsApi.categoryList()
+        var perPage = this.perPage,
+          page = this.currentPage;
+
+        apis.cmsApi.categoryList(perPage,page)
           .then(data => {
-            console.log(data.data.code)
             if (data.data.code !== 200){
               alert(data.data.message)
             }else {
               this.tableData = data.data.data.data
+              this.total = data.data.data.pagination.total;
+              $('.el-upload-list__item').hide()
             }
           })
           .catch(err => {
@@ -417,12 +520,12 @@
       //新增
       addSubmit: function() {
         var param = {
-          state: '0',
+          state: this.addForm.state,
           type: this.addForm.column_type,
           parent_id: this.addForm.column_belongs,
           name: this.addForm.column_name,
-          dir_name: this.addForm.directory_name,
-          picture: this.addForm.column_img,
+          dir_name: this.addForm.dir_name,
+          picture: this.column_img,
           link: this.addForm.column_link,
           seo_title: this.addForm.column_SEO,
           keyword: this.addForm.column_keyword,
@@ -431,7 +534,18 @@
         apis.cmsApi.categoryAdd(param).then(data => {
           if (data.data.code == 200){
             swal(data.data.message+"!", "", "success").then((value) => {
+              this.addFormVisible = false;
               this.getResult()
+
+              this.addForm.column_type = '',
+              this.addForm.column_belongs = '',
+              this.addForm.column_name = '',
+              this.addForm.dir_name = '',
+              this.column_img = '',
+              this.addForm.column_link = '',
+              this.addForm.column_SEO = '',
+              this.addForm.column_keyword = '',
+              this.addForm.column_sorting = ''
             });
           }else {
             swal(data.data.message+"!", "", "");
@@ -441,20 +555,93 @@
 
           });
       },
+
+      //添加子栏目
+      addChildCategory(index, row){
+        window.addChildCategoryId = row.id
+        this.addFormChildCategory = true;
+      },
+      addChildCategorySubmit(){
+        var param = {
+          parent_id:addChildCategoryId,
+          state: this.addChildForm.state,
+          type: this.addChildForm.column_type,
+          name: this.addChildForm.column_name,
+          dir_name: this.addChildForm.dir_name,
+          picture: this.column_img,
+          link: this.addChildForm.column_link,
+          seo_title: this.addChildForm.column_SEO,
+          keyword: this.addChildForm.column_keyword,
+          sort: this.addChildForm.column_sorting
+        }
+        apis.cmsApi.categoryAddChild(param).then(data => {
+          if (data.data.code == 200){
+            swal(data.data.message+"!", "", "success").then((value) => {
+              this.addFormChildCategory = false;
+              this.getResult()
+              this.addChildForm.column_type = '';
+              this.addChildForm.column_belongs = '';
+              this.addChildForm.column_name = '';
+              this.addChildForm.dir_name = '';
+              this.column_img = '';
+              this.addChildForm.column_link = '';
+              this.addChildForm.column_SEO = '';
+              this.addChildForm.column_keyword = '';
+              this.addChildForm.column_sorting = '';
+            });
+          }else {
+            swal(data.data.message+"!", "", "");
+          }
+        })
+          .catch(err => {
+
+          });
+      },
+
+      //状态开关
+      stateSwitch(data){
+        if (data.state == 1){
+          var state = 1
+        }
+        if (data.state == 0){
+          var state = 0
+        }
+        this.$ajax({
+          method: "get",
+          url: "//cms.com/admin/category/open/"+data.id,
+          type: 'json',
+          params: {
+            state: state
+          }
+        }).then(res => {
+          this.listLoading = false;
+          this.getResult();
+        });
+      },
+
       //显示编辑界面
+      img_show:function(){
+        this.editForm.img = ''
+      },
       handleEdit: function(index, row) {
         this.editFormVisible = true;
         apis.cmsApi.categoryDetails(row.id).then(data => {
           if (data.data.code == 200){
-              this.editForm.column_type = data.data.data.type;
+              this.editForm.state = data.data.data.state.toString();
+              this.editForm.column_type = data.data.data.type.toString();
               this.editForm.column_belongs = data.data.data.parent_id;
               this.editForm.column_name = data.data.data.name;
-              this.editForm.dir_name = data.data.data.directory_name;
+              this.editForm.dir_name = data.data.data.dir_name;
               this.editForm.column_link = data.data.data.link;
               this.editForm.column_SEO = data.data.data.seo_title;
               this.editForm.column_keyword = data.data.data.keyword;
               this.editForm.column_sorting = data.data.data.sort;
               window.column_modify_submit_id = data.data.data.id
+
+              //图片展示
+              this.editForm.img = '//cms.com'+data.data.data.picture;
+              //用正则获取img图片路径中的名称
+              this.editForm.img_name = data.data.data.picture.match(/\/(\w+\.(?:png|jpg|gif|bmp))$/i)[1];
           }else {
             swal(data.data.message+"!", "", "");
           }
@@ -465,14 +652,18 @@
       },
       //编辑
       editSubmit: function() {
-        console.log(column_modify_submit_id)
+        if (this.editForm.column_name instanceof Array){
+          var name = this.editForm.column_name.pop()
+        } else {
+          var name = this.editForm.column_name
+        }
         var param = {
           state: '0',
           type: this.editForm.column_type,
           parent_id: this.editForm.column_belongs,
-          name: this.editForm.column_name,
-          dir_name: this.editForm.directory_name,
-          picture: this.editForm.column_img,
+          name: name,
+          dir_name: this.editForm.dir_name,
+          picture: this.column_img,
           link: this.editForm.column_link,
           seo_title: this.editForm.column_SEO,
           keyword: this.editForm.column_keyword,
@@ -506,7 +697,7 @@
           .then(() => {
             this.listLoading = true;
             this.$ajax({
-              method: "get",
+              method: "post",
               url: "//cms.com/admin/category/del",
               data: {
                 ids:idArray
@@ -526,21 +717,17 @@
       //批量删除
       handleDeleteList: function() {
         const length = this.selectList.length;
-        let id = "";
-        for (let i = 0; i < length; i++) {
-          id += this.selectList[i].id + ",";
-        }
-        //去掉结尾,
-        id = id.substring(0, id.length - 1);
         var idArray = new Array()
-        idArray.push(id)
+        for (let i = 0; i < length; i++) {
+          idArray.push(this.selectList[i].id)
+        }
         this.$confirm("确认删除该记录吗?", "提示", {
           type: "warning"
         })
           .then(() => {
             this.listLoading = true;
             this.$ajax({
-              method: "get",
+              method: "post",
               url: "//cms.com/admin/category/del",
               data: {
                 ids:idArray
@@ -561,11 +748,31 @@
     mounted() {
       //初始加载
       this.getResult();
+
+      //栏目列表
+      this.$ajax({
+        method: "get",
+        url: "//cms.com/admin/category/categoryValue",
+        data: {}
+      }).then(res => {
+        this.options = res.data.data.data
+      });
+    },
+    updated(){
+      $(".el-table__expand-icon .el-icon-arrow-right").attr("class","el-icon-plus")
     }
   };
 </script>
 
-<style scoped>
+<style>
+  em {
+    font: bold 14px/20px tahoma, verdana;
+    color: #F60;
+    vertical-align: middle;
+    display: inline-block;
+    margin-right: 5px;
+    /*margin-left: -14px;*/
+  }
 
   .rows {
     display: flex;
@@ -580,7 +787,17 @@
   }
 
   .opt{
-    width: 260px;
+    width: 350px;
+  }
+
+  .imgshow{
+    width: 260px;height: 90px;
+    margin-top: 10px;
+    margin-right: 10px;
+    display: flex;
+    justify-content: space-around;
+    border: 1px solid #c0ccda;
+    border-radius: 6px;
   }
 
   .tit {
@@ -591,4 +808,34 @@
     font-size: 20px;opacity: 0.5;margin-left: 10px
   }
 
+
+  .el-tree .el-tree-node__expand-icon.expanded
+  {
+    -webkit-transform: rotate(0deg);
+    transform: rotate(0deg);
+  }
+  .el-tree .el-icon-caret-right:before
+  {
+    background: url(https://csdnimg.cn/public/favicon.ico) no-repeat 0 3px;
+    content: '';
+    display: block;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    background-size: 18px;
+  }
+  .el-tree .el-tree-node__expand-icon.expanded.el-icon-caret-right:before
+  {
+    background: url(https://csdnimg.cn/public/favicon.ico) no-repeat 0 3px;
+    content: '';
+    display: block;
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
+    background-size: 18px;
+  }
+  .el-tree-node__expand-icon.is-leaf::before
+  {
+    display: none;
+  }
 </style>
